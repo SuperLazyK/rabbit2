@@ -1,0 +1,46 @@
+ratprint: false$
+
+declare ("'", alphabetic)$
+depends([x, th] , t)$
+
+load ("f90")$
+f90_output_line_length_max:10000000$
+showmatf90(m):= for i thru length(m) do
+    for j thru length(transpose(m)) do
+    block([], printf(true,"[~d][~d] = ", i-1,j-1), f90(m[i][j]))$
+
+symbolilze(M):= subst([ diff(x,t,2)=ddx
+                      , diff(th,t,2)=ddth
+                      , diff(x,t,1)=dx
+                      , diff(th,t,1)=dth
+                    ], M)$
+
+xm: x + l * cos(th + %pi/2*3) $
+ym: l * sin(th + %pi/2*3) $
+
+th': diff(th, t)$
+x': diff(x, t)$
+th'': diff(th', t)$
+x'': diff(x', t)$
+
+xm': diff(xm, t)$
+ym': diff(ym, t)$
+
+KM: 1/2 * mc * x' ** 2$
+Km: 1/2 * mp * trigsimp(xm'**2 + ym'**2 )$
+Um: ym * mp * g $
+L: KM + Km - Um $
+X : [x, th]$
+dX : [x', th']$
+ddX : symbolilze([x'', th''])$
+rhs : expand(symbolilze(diff(jacobian([L],dX), t) - jacobian([L], X)))$
+
+A:jacobian(args(rhs)[1], ddX)$
+b:(expand(transpose(rhs) - (jacobian(args(rhs)[1], ddX)).transpose(matrix(ddX))))$
+disp(A)$
+disp(b)$
+showmatf90(trigsimp(ratsimp(invert(A) . ([u, 0] - b))));
+/*
+[0][0] = (u+(g*mp*cos(th)-dth**2*l*mp)*sin(th))/(mp*sin(th)**2+mc)
+[1][0] = -(cos(th)*u+((-dth**2*l*mp*cos(th))+g*mp+g*mc)*sin(th))/(l*mp*sin(th)**2+l*mc)
+*/
